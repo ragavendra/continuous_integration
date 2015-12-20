@@ -3,8 +3,9 @@ require 'json'
 include WEBrick
 
 DOCKER_PATH = "#{ENV['HOME']}/github/devops/soa/dev"
-SPECS_PATH = "#{ENV['HOME']}/github/tests/soa/api"
-SPECS_LOGPATH = "#{SPECS_PATH}/logs/#{@repo_name}"
+API_SPECS_PATH = "#{ENV['HOME']}/github/tests/soa/api"
+UI_SPECS_PATH = "#{ENV['HOME']}/github/tests/soa/se"
+#SPECS_LOGPATH = "#{SPECS_PATH}/logs/#{@repo_name}"
 RAKE_TASK = "cards:dev"
 #; cd $HOME/gitbase/test-auto/SOA/api; bundle exec rake cards:dev | aha --black >$LOGPATH"
 
@@ -151,9 +152,13 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
 		@git_branch = @git_branch[2]
 
 		#navigate to specs dir
-		%x["cd #{SPECS_PATH}"]
-		%x["bundle exec rake #{@repo_name}:#{@git_branch} | aha --black >#{SPECS_LOGPATH}/$(date +\%d-\%m-\%Y-\%H-\%s)-run.htm"]
+		%x["cd #{API_SPECS_PATH}"]
+		%x["bundle exec rake #{@repo_name}:#{@git_branch} | aha --black >logs/#{@git-branch}/$(date +\%d-\%m-\%Y-\%H-\%s)-API-run.htm"]
 		#%x["bundle exec rake cards:dev | aha --black >$LOGPATH/$(date +\%d-\%m-\%Y-\%H-\%s)-run.htm"]
+		
+		#navigate to specs dir
+		%x["cd #{UI_SPECS_PATH}"]
+		%x["bundle exec rake #{@repo_name}:#{@git_branch} | aha --black >logs/#{@git-branch}/$(date +\%d-\%m-\%Y-\%H-\%s)-UI-run.htm"]
 		
 		#requestHash = JSON.parse(request.body, symbolize_names: true)
 		#@opts[:confirmation_token] =  requestHash[:command]
