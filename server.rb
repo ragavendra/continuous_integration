@@ -2,7 +2,9 @@ require 'webrick'
 require 'json'
 include WEBrick
 
-class Server < WEBrick::HTTPServlet::AbstractServlet
+DOCKER_PATH = '/home/uname/github/devops/soa/dev/'
+class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
+	#curl localhost:8080/docker
 	def do_GET (request, response)
 		
 		#status, content_type, body = do_stuff_with request
@@ -86,7 +88,38 @@ class Server < WEBrick::HTTPServlet::AbstractServlet
 			}
 		}
 =end
-	
+
+	#curl -d "{\"command\":\"ls\", \"par1\":\"/opt\"}" localhost:8080/docker/	
+	def do_POST1 (request, response)
+		puts "this is a post request who received #{request.body}"
+		repo_name = requestHash[:repository]
+		repo_name.split('/')
+
+		%x["cd #{DOCKER_PATH}"]
+		%x["docker-compose pull"]
+		%x["docker-compose pull #{repo_name[1]}"]
+		%x["docker-compose kill"]
+		%x["docker-compose kill #{repo_name[1]}"]
+		#%x[docker-compose rm -y]
+		%x["docker-compose up -d"]
+		%x["docker-compose start #{repo_name[1]}""]
+		#%x[docker-compose ps]
+		requestHash = JSON.parse(request.body, symbolize_names: true)
+		#@opts[:confirmation_token] =  requestHash[:command]
+		#"repository": "mynamespace/repository"
+		
+		process_status = %x["docker-compose ps"]
+		puts "Docker process status - #{process_status}"
+		obj = {
+			"Result" => process_status
+		}
+
+		response.body = JSON.generate obj
+		response['Content-Type'] = "application/json"
+
+	end	
+
+	#curl -d "{\"command\":\"ls\", \"par1\":\"/opt\"}" localhost:8080/docker/	
 	def do_POST (request, response)
 		puts "this is a post request who received #{request.body}"
 			
@@ -120,7 +153,7 @@ root = File.expand_path '/home/ragu/Documents/github/SOA/webrick/www'
 #server = WEBrick::HTTPServer.new(:Port => 3030)
 server = WEBrick::HTTPServer.new :Port => 8080, :DocumentRoot => root, :DirectoryIndex  => []
 
-server.mount "/docker", Server
+server.mount "/docker", DockerEndpoint
 
 trap("INT") {
 	server.shutdown
