@@ -2,8 +2,44 @@ require 'webrick'
 require 'json'
 include WEBrick
 
-DOCKER_PATH = '/home/uname/github/devops/soa/dev/'
+DOCKER_PATH = "#{ENV['HOME']}/github/devops/soa/dev"
+SPECS_PATH = "#{ENV['HOME']}/github/tests/soa/api"
+SPECS_LOGPATH = "#{SPECS_PATH}/logs/#{@repo_name}"
+RAKE_TASK = "cards:dev"
+#; cd $HOME/gitbase/test-auto/SOA/api; bundle exec rake cards:dev | aha --black >$LOGPATH"
+
+=begin
+apiUser.rb
+attr_accessor :autoBankVerificationService
+attr_accessor :responseAssertions
+attr_accessor :memberService
+    
+    def initialize(opts)
+	@opts = opts
+	@memberService = MemberService.new(@opts)
+	@responseAssertions = ResponseAssertions.new(@opts)
+
+specs.rb
+@apiUser = ApiUser.new(@opts)   
+        #puts @opts.inspect             
+		    
+	#signup, activate, login and credit application
+	res = @apiUser.memberService.signup 
+
+=end
 class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
+
+	def initialize   
+		#def initialize(opts)   
+		#super(opts)    
+		@resourcePath = "/cards"       
+		@repo_name = ''
+		@process_status = ''
+		@git_branch = ''
+	end
+#DOCKER_PATH_1_ = '/home/uname/github/devops/soa/dev/'
+#can be called outside class like DockerEndPoint::DOCKER_PATH_1
+
 	#curl localhost:8080/docker
 	def do_GET (request, response)
 		
@@ -92,28 +128,53 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
 	#curl -d "{\"command\":\"ls\", \"par1\":\"/opt\"}" localhost:8080/docker/	
 	def do_POST1 (request, response)
 		puts "this is a post request who received #{request.body}"
-		repo_name = requestHash[:repository]
-		repo_name.split('/')
-
+		#repo_name = requestHash[:repository]
+		#repo_name.split('/') repo_name[1]}
+ 		@repo_name = requestHash[:name]
 		%x["cd #{DOCKER_PATH}"]
+		%x["git pull"]
 		%x["docker-compose pull"]
-		%x["docker-compose pull #{repo_name[1]}"]
+		%x["docker-compose pull #{@repo_name}"]
 		%x["docker-compose kill"]
-		%x["docker-compose kill #{repo_name[1]}"]
+		%x["docker-compose kill #{@repo_name}"]
 		#%x[docker-compose rm -y]
 		%x["docker-compose up -d"]
-		%x["docker-compose start #{repo_name[1]}""]
+		%x["docker-compose start #{@repo_name}""]
+		@process_status = %x["docker-compose ps"]
+		puts "Docker process status - #{@process_status}"
+		
+
 		#%x[docker-compose ps]
-		requestHash = JSON.parse(request.body, symbolize_names: true)
+		
+ 		@git_branch = requestHash[:trigger_metadata][:ref]
+		#git_branch.split('/')"ref": "refs/heads/somebranch"
+		@git_branch = @git_branch[2]
+
+		#navigate to specs dir
+		%x["cd #{SPECS_PATH}"]
+		%x["bundle exec rake #{@repo_name}:#{@git_branch} | aha --black >#{SPECS_LOGPATH}/$(date +\%d-\%m-\%Y-\%H-\%s)-run.htm"]
+		#%x["bundle exec rake cards:dev | aha --black >$LOGPATH/$(date +\%d-\%m-\%Y-\%H-\%s)-run.htm"]
+		
+		#requestHash = JSON.parse(request.body, symbolize_names: true)
 		#@opts[:confirmation_token] =  requestHash[:command]
 		#"repository": "mynamespace/repository"
-		
-		process_status = %x["docker-compose ps"]
-		puts "Docker process status - #{process_status}"
-		obj = {
-			"Result" => process_status
-		}
+=begin	
+		##################<SOA - Cards>#################
+		LOGDIR=card-team
 
+		#perform git pull
+		00 17,23,5,11 * * * cd $HOME/gitbase/devops/services/soa/dev; git pull; cd $SPECS_PATH; git pull 2>/tmp/git-pull.log
+		#00 17,23,5,11 * * * cd $DOCKER_PATH; git config --global credential.helper 'cache --timeout 21600'; git pull; cd $SPECS_PATH; git pull 2>/tmp/git-pull.log
+
+		#run cards
+		00 17 * * 1-5 export LOGPATH=$HOME/gitbase/test-auto/SOA/api/logs/$LOGDIR/$(date +\%d-\%m-\%Y-\%H-\%s)-run.htm; cd $HOME/gitbase/test-auto/SOA/api; bundle exec rake cards:dev | aha --black >$LOGPATH
+		#; bin/slack.sh 2>/tmp/specs-run.log
+		#00 17,21 * * 1-5 cd $HOME/gitbase/test-auto/SOA/api; bin/docker.sh; sleep 15; bundle exec rake cards:all | aha --black >logs/SOACards/$(date +\%d-\%m-\%Y-\%H)-run.htm
+		################</SOA - Cards>################
+=end
+		obj = {
+			"Result" => @process_status
+		}
 		response.body = JSON.generate obj
 		response['Content-Type'] = "application/json"
 
