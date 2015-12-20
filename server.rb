@@ -226,3 +226,351 @@ trap("INT") {
 }
 
 server.start
+
+=begin boot.rb
+# boot.rb is the service initialization file.
+# Its responsibilities include configuring the logger, setting up paths,
+# schemas, templates, etc. and providing access to these under a global
+# `App` object.
+# boot.rb gets required by main.rb where main.rb is responsible for providing
+# an interface to actually run the service.
+#
+$:.unshift File.dirname(__FILE__)
+$:.unshift File.join(File.dirname(__FILE__), 'app')
+
+require 'rubygems'
+require 'bundler/setup'
+require 'active_support/core_ext/hash/indifferent_access'
+
+App = Struct.new(:root, :env, :schema_dir, :settings, :logger, :db, :session, :name).new
+
+App.root = File.dirname(__FILE__)
+App.env = ENV['SERVICE_ENV'] || 'dev'
+App.schema_dir = File.join(App.root, 'schemas')
+App.name = ENV['APP_NAME']
+App.session = {}
+
+require 'erb'
+require 'yaml'
+App.define_singleton_method(:load_erb_yaml) do |relative_path|
+  path = File.join(App.root, relative_path)
+  file = File.read(path)
+  erb = ERB.new(file).result
+  YAML.load(erb)
+end
+
+App.settings = HashWithIndifferentAccess.new(App.load_erb_yaml('config/settings.yaml'))
+
+#-- Logger Configuration -------------------------------------------------------------------------------------
+require 'logger'
+App.logger = Logger.new(STDOUT)
+App.logger.level = App.settings[:logger][:level]
+App.logger.progname = App.settings[:logger][:name]
+
+#-- DB Configuration -----------------------------------------------------------------------------------------
+db_config = App.load_erb_yaml('config/database.yaml')[App.env]
+
+require 'sequel'
+db_url = <<-DB_URL
+#{db_config['adapter']}://#{db_config['host']}:#{db_config['port']}/#{db_config['database']}?\
+encoding=#{db_config['encoding']}&\
+pool=#{db_config['pool']}&\
+username=#{db_config['username']}&\
+password=#{db_config['password']}
+DB_URL
+
+App.db = Sequel.connect(db_url)
+App.db.tables # fails with Sequel::DatabaseConnectionError if connection cannot be established
+
+#-- Debug Configuration --------------------------------------------------------------------------------------
+if App.env == 'test' || App.env == 'dev'
+  require 'byebug'
+  App.db.loggers << App.logger
+end
+
+###########	<publish.rb 
+
+require 'json'
+require 'active_support/core_ext/string/filters' # String#squish
+
+#-- Custom Errors --------------------------------------------------------------------------------------------
+class MessageHasNoBodyError < StandardError; end
+class MessageHasNoHeadersError < StandardError; end
+class MessageHasNoTypeError < StandardError; end
+class MessageHasNoRoutingKeyError < StandardError; end
+
+
+#-- Publish Interface ----------------------------------------------------------------------------------------
+module Publish
+  extend self
+
+  def call(channel, correlation_id, response)
+    fail MessageHasNoBodyError.new       unless response.respond_to?(:body)
+    fail MessageHasNoHeadersError.new    unless response.respond_to?(:headers)
+    fail MessageHasNoTypeError.new       unless response.respond_to?(:type)
+    fail MessageHasNoRoutingKeyError.new unless response.respond_to?(:routing_key)
+
+    exchange = channel.fanout(App.settings[:bus][:exchange], durable: true)
+    options = publish_settings(correlation_id, response)
+
+    App.logger.debug("#{correlation_id} Publishing message: routing_key: '#{options[:routing_key]}'")
+    App.logger.debug("#{correlation_id} Publishing message: type:....... '#{options[:type]}'")
+    App.logger.debug("#{correlation_id} Publishing message: headers:.... '#{options[:headers]}'")
+    App.logger.debug("#{correlation_id} Publishing message: body:....... '#{response.to_json.squish}'")
+
+    exchange.publish(response.body.to_json, options)
+  end
+
+  private
+
+    def publish_settings(correlation_id, response)
+      {
+        routing_key: response.routing_key || App.settings[:bus][:routing_key],
+        type: response.type,
+        content_type: 'application/json',
+        correlation_id: correlation_id,
+        headers: response.headers
+      }
+    end
+
+end
+
+############### router.rb #################
+require 'json-schema'
+require 'date' # future_or_present_date_validator
+
+Dir["app/controllers/**/*.rb"].each { |file| require file }
+
+#-- Errors ---------------------------------------------------------------------------------------------------
+class JsonSchemaNotFoundError < StandardError; end
+
+class SoaServiceError < StandardError
+  attr_reader :errors
+  def initialize(errors)
+    @errors = errors
+  end
+end
+
+class JsonValidationError < StandardError
+  attr_accessor :errors
+  def initialize(errors)
+    @errors = errors
+  end
+end
+
+#-- Router Interface -----------------------------------------------------------------------------------------
+class Router
+  ROUTES_PATH='config/routes.cfg'
+
+  def initialize
+    @routes = {}
+    @schemas = {}
+    File.foreach(File.join(App.root, ROUTES_PATH)) do |line|
+      next if line.match(/^\s*#/) || line.match(/\A\s*\Z/)
+      cfg = eval("{ #{line} }")
+      schema = cfg.delete(:schema)
+      @routes.merge!(cfg) { |key, old, new| Array(old) | Array(new) }
+      @schemas.merge!(cfg.keys.first => schema)
+    end
+  end
+
+  def call(routing_key, type, body, params)
+    domain = routing_key.split('.').first
+    key = routing_key.gsub(/\./, '_')
+    method = "#{key}_#{type}".to_sym
+
+    return unhandled unless @routes.has_key?(method)
+
+    fail SoaServiceError.new(HashWithIndifferentAccess.new(JSON.parse(body))) if soa_service_error?(params, :header)
+    parsed_body = HashWithIndifferentAccess.new(JSON.parse(body))
+    fail SoaServiceError.new(HashWithIndifferentAccess.new(JSON.parse(body))) if soa_service_error?(parsed_body, :body)
+
+    response = []
+
+    Array(@routes[method]).each_with_index do |controller_action, index|
+      controller, action = @routes[method].split('.')
+      controller = controller.constantize
+
+      return unhandled unless controller.respond_to?(action)
+
+      if @schemas[method]
+        schema = @schemas[method].kind_of?(Array) ? (@schemas[method][index] || @schemas[method].last) : @schemas[method]
+      else
+        schema = "#{domain}/#{type}-schema"
+      end
+      fail_unless_schema_match!(body, "#{schema}.json")
+
+      response << controller.send(action, parsed_body, params)
+    end
+
+    response.flatten(1)
+  end
+
+  private
+
+    # type = [:header, :body] # -> One of these.
+    def soa_service_error?(hash, type)
+      case type
+      when :header
+        hash.has_key?(:success) && hash[:success] == false ||
+          hash.has_key?('success') && hash['success'] == false
+      when :body
+        hash.has_key?(:errors) || hash.has_key?('errors')
+      else
+        false
+      end
+    end
+
+    def unhandled
+      App.logger.info("Skipping unhandled message")
+      nil
+    end
+
+    def future_or_present_date_validator(value)
+      date = Date.parse(value)
+      fail JSON::Schema::CustomFormatError.new("Date must not be before today") if date < Date.today
+    rescue => e
+      raise JSON::Schema::CustomFormatError.new(e.message)
+    end
+
+    def fail_unless_schema_match!(body, schema_file)
+      schema_file = File.join(App.schema_dir, schema_file)
+      fail JsonSchemaNotFoundError.new(schema_file) unless File.exists?(schema_file)
+
+      JSON::Validator.register_format_validator(
+        'future-or-present-date',
+        method(:future_or_present_date_validator),
+        ['draft4'])
+
+      errors = JSON::Validator.fully_validate(schema_file, body, errors_as_objects: true)
+      fail JsonValidationError.new(errors) if errors.any?
+    end
+
+end
+
+# main.rb is responsible for providing an interface to actually run the service.
+# See boot.rb for configuration and environment setup.
+#
+require_relative 'boot'
+
+require 'rmq_foundation'
+require 'json'
+require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/string/filters' # String#squish
+require 'active_support/core_ext/hash/indifferent_access'
+
+require_relative 'publish'
+require_relative 'router'
+require 'views/error_view'
+require 'views/soa_service_error_view'
+
+
+#-- Errors ---------------------------------------------------------------------------------------------------
+class MissingCorrelationIdError < StandardError; end
+
+class MissingAMQPExchangeError  < StandardError
+  def initialize(exchange)
+    super("Exchange '#{exchange}' doesn't exist!")
+  end
+end
+
+#-- Helpers --------------------------------------------------------------------------------------------------
+module Main
+  def self.create_rmq_publish_channel(rmq_client)
+    rmq_connection = rmq_client.connection
+
+    App.logger.info("Creating publish channel")
+    rmq_channel = rmq_connection.create_channel
+
+    App.logger.info("Connecting to exchange: '#{App.settings[:bus][:exchange]}'")
+
+    if !rmq_connection.exchange_exists?(App.settings[:bus][:exchange])
+      fail MissingAMQPExchangeError.new(App.settings[:bus][:exchange])
+    end
+
+    rmq_channel
+  end
+
+  # NOTE: This function should be removed in proper clients.
+  # All this does is create the queue to read from.  Proper clients should have the RabbitMQ
+  # definitions file updated properly to support them.
+  # :nocov:
+  def self.sample_setup # TODO: Remove this method in new service
+    require 'bunny'
+    conn = Bunny.new(host: App.settings[:bus][:host])
+    conn.start
+    ch = conn.create_channel
+
+    x_sample  = Bunny::Exchange.new(ch, :topic, "sample", auto_delete: false, durable: true)
+    x_sample.bind("routing", routing_key: "sample.#")
+
+    q = ch.queue("sample", auto_delete: false, durable: true)
+    q.bind("sample", routing_key: "sample.perform", auto_delete: false, durable: true)
+
+    x_sample_event = Bunny::Exchange.new(ch, :fanout, "sample.event", auto_delete: false, durable: true)
+    x_sample_event.bind("sample", routing_key: "sample.event", auto_delete: false, durable: true)
+
+    q.bind("sample.event")
+
+    conn.close
+  end
+  # :nocov:
+end
+
+#-- Entrypoint -----------------------------------------------------------------------------------------------
+def run
+  Main.sample_setup # TODO: Remove this call in new service
+
+  App.logger.info("Attempting to connect to #{App.settings[:bus][:host]}")
+  client = RmqFoundation::Client.new(App.settings[:message_bus])
+
+  router = Router.new
+  publish_channel = Main.create_rmq_publish_channel(client)
+
+  App.logger.info("Launching worker")
+  client.async_subscribe(App.settings[:bus][:queue], block: true, manual_ack: true) do |delivery_info, properties, body|
+    type = properties.type
+    App.session[:correlation_id] = correlation_id = properties.correlation_id
+    App.logger.debug("#{correlation_id} Message received: routing_key: '#{delivery_info.routing_key}'")
+    App.logger.debug("#{correlation_id} Message received: type:....... '#{type}'")
+    App.logger.debug("#{correlation_id} Message received: headers:.... '#{properties.headers}'")
+    App.logger.debug("#{correlation_id} Message received: body:....... '#{body.to_s.squish}'")
+
+    begin
+      fail MissingCorrelationIdError.new unless correlation_id.present?
+
+      params = HashWithIndifferentAccess.new(properties.to_hash.merge(properties[:headers] || {}).keep_if { |k,_| k != :headers })
+
+      response = router.call(delivery_info.routing_key, type, body, params)
+      publish = -> (msg) { Publish.call(publish_channel, correlation_id, msg) if msg.is_a?(Views::BaseView) }
+      Array(response).each { |response| publish.call(response) }
+
+    rescue SoaServiceError => e
+      response = Views::SoaServiceErrorView.new(e.errors, delivery_info.routing_key)
+      Publish.call(publish_channel, correlation_id, response)
+
+    rescue JsonValidationError => e
+      response = Views::JsonSchemaErrorView.new(e.errors, type)
+      Publish.call(publish_channel, correlation_id, response)
+
+    rescue => e
+      App.logger.error(e)
+      response = Views::ErrorView.new(e, type)
+      Publish.call(publish_channel, correlation_id, response)
+
+    ensure
+      client.channel.acknowledge(delivery_info.delivery_tag, false)
+    end
+  end
+
+rescue => e
+  App.logger.error(e)
+
+  if client.connection.respond_to?(:connected?) && client.connection.connected?
+    client.send(:close_connection)
+  end
+end
+
+=end
+
+
