@@ -130,7 +130,7 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
 
 		obj = {
 			#"Result" => constants		response.body = JSON.generate obj
-		response['Content-Type'] = "application/json"
+		#response['Content-Type'] = "application/json"
 		}
 	end	
 end
