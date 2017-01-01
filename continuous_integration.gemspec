@@ -10,7 +10,8 @@ Gem::Specification.new do |gem|
 	gem.email         = ["ragavendra.bn@gmail.com"]
 	gem.description   = %q{CI server for running integration tests using webrick}
 	gem.summary       = %q{One can run their UI and API tests using this gem}
-	gem.homepage      = ""
+	gem.homepage      = "https://rubygems.org/gems/continuous_integration"
+	gem.license       = 'MIT'
 
 	gem.files         = `git ls-files`.split($/)
 	gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
@@ -18,5 +19,5 @@ Gem::Specification.new do |gem|
 	gem.require_paths = ["lib"]
 
 	gem.add_development_dependency 'rspec', '~> 2.7'
-	gem.add_development_dependency 'rake'
+	gem.add_development_dependency 'rake', '~> 0'
 end
