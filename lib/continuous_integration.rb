@@ -33,11 +33,11 @@ module ContinuousIntegration
 	private
 
 	def self.run_server root
-		WEBrick::HTTPServer.new :Port => 8080, :DocumentRoot => root, :DirectoryIndex  => []
+		WEBrick::HTTPServer.new :Port => PORT_NUM, :DocumentRoot => root, :DirectoryIndex  => []
 	end
 	
 	def self.dir_mount server
-		server.mount "/qa/docker/", DockerEndpoint
+		server.mount SUB_URI, DockerEndpoint
 	end
 
 
