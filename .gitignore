@@ -1,0 +1,14 @@
+env/
+!env/shell
+\#*
+.\#*
+.\#
+.bundle
+.swp
+.swo
+.gem
+
+
+
+# RubyMine
+.idea/
