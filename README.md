@@ -1,6 +1,6 @@
-# ContinuousIntegration: a gem to say consume the Quay.io posts on sucessful build completion and perform the docker operations and tests run or say perform the CI capability 
+# ContinuousIntegration: gem helps to perform CI capability in the minimalistic approach 
 
-ContinuousIntegration helps to perform CI capability in the minimalistic approach.
+ContinuousIntegration a gem to say consume the Quay.io posts on sucessful build completion and perform the docker operations and tests run or say perform the CI capability.
 
 Lets say a developer checks in the code to the github. The container repository like Quay receives a call to perform the operations on building the new say Docker repo and host it. Quay can be later configured to be able to shoot out a POST call when this is done. Such call is consumed by the continuous_integration to be able to perform customized operations. Like say, destroy the local or old docker container(s). Pull the latest container(s) from the Quay. Pull the latest API or UI tests and run them against the new container(s). Finally report the test run results to the team on Slack or wherever.
 
