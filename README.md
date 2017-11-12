@@ -1,6 +1,6 @@
-# ContinuousIntegration: gem helps to perform CI capability in the minimalistic approach 
+# The CI gem helps to perform CI capability in the minimalistic approach 
 
-ContinuousIntegration a gem to say consume the Quay.io posts on sucessful build completion and perform the docker operations and tests run or say perform the CI capability.
+CI is a gem to say consume the Quay.io posts on sucessful build completion and perform the docker operations and tests run or say perform the CI capability.
 
 Lets say a developer checks in the code to the github. The container repository like Quay receives a call to perform the operations on building the new say Docker repo and host it. Quay can be later configured to be able to shoot out a POST call when this is done. Such call is consumed by the continuous_integration to be able to perform customized operations. Like say, destroy the local or old docker container(s). Pull the latest container(s) from the Quay. Pull the latest API or UI tests and run them against the new container(s). Finally report the test run results to the team on Slack or wherever.
 
@@ -41,6 +41,16 @@ Shutting it down
 ContinuousIntegration.shutdown_server server
 ```
 
+## Paths
+
+Default paths have been updated in the [constants.rb](lib/continuous_integration/constants.rb) file. It can be overriden by passing env vars when running the server.
+
+## To - Do list
+
+1. Create text file say PATHFILE when installing gem to easy fill in the constants rather than be in the code
+2. Add more container hosting providers support and add tasks accordingly
+3. Segregate individual tasks like tests run more seamlessly or even make them file based to give more flexibillity
+
 ### Troubleshooting
 
 For help with common problems, see [TROUBLESHOOTING](doc/TROUBLESHOOTING.md).
@@ -66,4 +76,4 @@ Please feel free to donate as this work is made possible with donations like you
 
 ### Code of Conduct
 
-Everyone interacting in the ContinuousIntegration project’s codebases, issue trackers, chat rooms, and mailing lists is expected to follow the [Bundler code of conduct](doc/CODE_OF_CONDUCT.md).
+Everyone interacting in the CI project’s codebases, issue trackers, chat rooms, and mailing lists is expected to follow the [CI code of conduct](doc/CODE_OF_CONDUCT.md).
