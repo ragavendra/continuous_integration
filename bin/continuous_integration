@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require 'continuous_integration'
+
+server = ContinuousIntegration.run_ci
+server.start
