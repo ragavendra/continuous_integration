@@ -2,5 +2,5 @@
 
 require 'continuous_integration'
 
-server = ContinuousIntegration.run_ci
-server.start
+server = ContinuousIntegration.setup_server
+ContinuousIntegration.start_server server
