@@ -15,3 +15,7 @@
 *.swp
 *.swo
 *.jpg
+
+#bundler files
+Gemfile
+Gemfile.lock
