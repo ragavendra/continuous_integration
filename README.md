@@ -35,8 +35,15 @@ gem install continuous_integration
 Default paths have been defined in the [constants.rb](lib/continuous_integration/constants.rb) file. Update it aqccordingls as per your needs. It can also be overriden by passing them when running the server env var.
 
 #### Running
-Put the below contents in a ruby file say `ci_server.rb`
+In a console just run
 
+```
+$ continuous_integration
+```
+
+Running as a program
+
+Put the below contents in a ruby file say `ci_server.rb`
 ```
 #ci_server.rb
 
