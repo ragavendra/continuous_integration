@@ -19,3 +19,4 @@
 #bundler files
 Gemfile
 Gemfile.lock
+.ruby-version
