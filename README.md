@@ -92,6 +92,17 @@ If you'd like to contribute to ContinuousIntegration, that's awesome, and we <3 
 
 Everyone interacting in the CI project’s codebases, issue trackers, chat rooms, and mailing lists is expected to follow the [CI code of conduct](doc/CODE_OF_CONDUCT.md).
 
+#### Acknowledgments
+[Docker](https://www.docker.com/)
+
+[Quay](https://quay.io/)
+
+[Aha tool](https://github.com/theZiz/aha)
+
+
+#### Customizations
+Depending on the need and various third party services customizations, please feel free to write to me
+
 ### Donations
 
 If you are using CI for you organization, please help solicit to donate, as this work is made possible with donations like yours. It involves years of efforts with money spent to obtain the college degree and experience gained to write quality software. PM for customizations and implementations 
