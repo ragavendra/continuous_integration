@@ -9,7 +9,7 @@ require 'continuous_integration'
 
 class ContinuousIntegrationTest < Minitest::Test
   def setup
-    # @server = ContinuousIntegration.setup_server
+    # @server = ContinuousIntegration::Server.setup_server
     @root = File.expand_path "#{API_SPECS_PATH}/logs"
     @t1 = nil
     @t2 = nil
@@ -30,7 +30,8 @@ class ContinuousIntegrationTest < Minitest::Test
 
   def setup_server
     @t1.join until @t1.nil?
-    @server = ContinuousIntegration.setup_server if @t1.nil? && @server.nil?
+    @server = ContinuousIntegration::Server.setup_server if @t1.nil? &&
+                                                            @server.nil?
     assert_kind_of(
       WEBrick::HTTPServer, @server,
       'Shutdown server did not return object'
@@ -38,7 +39,10 @@ class ContinuousIntegrationTest < Minitest::Test
   end
 
   def start_server
-    @t1 = Thread.new { @server = ContinuousIntegration.start_server @server }
+    @t1 = Thread.new do
+      @server = ContinuousIntegration::Server.start_server
+      @server
+    end
     assert_kind_of(
       WEBrick::HTTPServer, @server,
       "Shutdown server did not return object #{@server}"
@@ -46,7 +50,10 @@ class ContinuousIntegrationTest < Minitest::Test
   end
 
   def shutdown_server
-    @t2 = Thread.new { @server = ContinuousIntegration.shutdown_server @server }
+    @t2 = Thread.new do
+      @server = ContinuousIntegration::Server.shutdown_server
+      @server
+    end
     @t2.join
     assert_nil @server, 'Server class is not nil'
     assert @t1.status, "Thread is still running #{@t1.status}"
