@@ -8,6 +8,16 @@ require 'continuous_integration/version'
 
 module ContinuousIntegration
 
+	# Perform Continuous Integration operations!
+	#
+	# Example:
+	#   >> server = ContinuousIntegration.setup_server
+	#   >> ContinuousIntegration.start_server server
+	#   => INFO  WEBrick x.x.x
+	#
+	# Arguments:
+	#   server: (Object)
+
 	#setup the CI server config
 	def self.setup_server
 		#path for the web server to serve the test results
