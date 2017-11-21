@@ -2,7 +2,6 @@
 
 require 'webrick'
 require 'json'
-include WEBrick
 
 require_relative 'constants'
 require_relative 'tasks'

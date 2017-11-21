@@ -3,5 +3,5 @@
 
 require 'continuous_integration'
 
-server = ContinuousIntegration.setup_server
-ContinuousIntegration.start_server server
+server = ContinuousIntegration::Server.setup_server
+ContinuousIntegration::Server.start_server server
