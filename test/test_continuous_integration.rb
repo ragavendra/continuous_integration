@@ -40,8 +40,8 @@ class ContinuousIntegrationTest < Minitest::Test
 
   def start_server
     @t1 = Thread.new do
-      @server = ContinuousIntegration::Server.start_server
-      @server
+      @server = ContinuousIntegration::Server
+                .start_server @server
     end
     assert_kind_of(
       WEBrick::HTTPServer, @server,
@@ -51,8 +51,8 @@ class ContinuousIntegrationTest < Minitest::Test
 
   def shutdown_server
     @t2 = Thread.new do
-      @server = ContinuousIntegration::Server.shutdown_server
-      @server
+      @server = ContinuousIntegration::Server
+                .shutdown_server @server
     end
     @t2.join
     assert_nil @server, 'Server class is not nil'

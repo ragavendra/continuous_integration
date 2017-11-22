@@ -48,8 +48,8 @@ Put the below contents in a ruby file say `ci_server.rb`
 #ci_server.rb
 
 require 'continuous_integration'
-server = ContinuousIntegration.setup_server
-ContinuousIntegration.start_server server
+server = ContinuousIntegration::Server.setup_server
+ContinuousIntegration::Server.start_server server
 ```
 
 and then run it like below to start the CI server
