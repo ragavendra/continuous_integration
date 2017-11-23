@@ -12,15 +12,18 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
     @result_api = ''
     @result_ui = ''
     @git_branch = ''
-    @lock = false
+    @lock = true
   end
 
   # curl localhost:8080/docker
   # POST call made by quay to CI server
   def do_POST(request, _response)
+
+    #print "Request is #{request}"
     # parse JSOn to hash key
     request_hash = JSON.parse(request.body, symbolize_names: true)
 
+    begin
     # fetch the github repo name
     @repo_name = request_hash[:name]
 
@@ -29,6 +32,10 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
     @git_branch = @git_branch.split('/')
     @git_branch = @git_branch.last
     perform_operations
+
+    rescue StandardError => error
+	    print "Not a valid Quay post " + error.to_s
+    end
   end
 
   # method to perform various CI operations

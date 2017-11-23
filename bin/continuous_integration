@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'continuous_integration'
+require_relative '../lib/continuous_integration'
 
 server = ContinuousIntegration::Server.setup_server
 ContinuousIntegration::Server.start_server server
