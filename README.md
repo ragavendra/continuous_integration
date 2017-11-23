@@ -32,8 +32,9 @@ gem install continuous_integration
 ### Usage
 
 #### Pre-requisites
-1. Make sure that `Docker` and `Aha tool` are installed.
+1. Make sure that `Docker` and `Aha tool` are installed
 2. The `Paths` in the constants.rb file should be valid
+3. The user may need sudo access as docker needs them
 
 #### Constants
 Default paths have been defined in the [constants.rb](lib/continuous_integration/constants.rb) file. Update it aqccordingls as per your needs. It can also be overriden by passing them when running the server env var.
