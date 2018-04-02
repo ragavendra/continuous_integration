@@ -58,8 +58,7 @@ Put the below contents in a ruby file say `ci_server.rb`
 #ci_server.rb
 
 require 'continuous_integration'
-server = ContinuousIntegration::Server.setup_server
-ContinuousIntegration::Server.start_server server
+ContinuousIntegration::Server.start_server
 ```
 
 and then run it like below to start the CI server
@@ -82,7 +81,17 @@ curl -d "@schemas/quay-success-completed.json" -H "Content-Type: application/jso
 #### Stopping the server
 ```
 Ctrl + C
+
+OR
+
+ContinuousIntegration::Server.shutdown_server
 ```
+
+#### Results
+
+Test results should be available in the `API_SPECS_PATH/logs` folder which can be accessed by the browser at http://localhost:8080/
+
+Furthermore code can be added ini `slack_post` method [tasks.rb](lib/continuous_integration/tasks.rb)`tasks.rb` to send this test results link to your team on a slack channel 
 
 ### Troubleshooting
 

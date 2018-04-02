@@ -3,5 +3,5 @@
 
 require_relative '../lib/continuous_integration'
 
-server = ContinuousIntegration::Server.setup_server
-ContinuousIntegration::Server.start_server server
+#server starts like below
+ContinuousIntegration::Server.start_server
