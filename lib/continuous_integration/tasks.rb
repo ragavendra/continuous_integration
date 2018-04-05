@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'constants'
+require 'thread'
 
 # Class to perform operations on receiving http calls
 class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
@@ -12,7 +13,7 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
     @result_api = ''
     @result_ui = ''
     @git_branch = ''
-    @lock = true
+		#@lock = Mutex.new
   end
 
   # curl localhost:8080/docker
@@ -31,7 +32,32 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
     @git_branch = request_hash[:trigger_metadata][:ref]
     @git_branch = @git_branch.split('/')
     @git_branch = @git_branch.last
-    perform_operations
+
+		while true
+			if File.exist?("file.lock")
+				sleep 10
+				puts "Waiting"
+			else
+				puts "File not there"
+				break
+			end
+
+		end
+
+		perform_operations
+
+		#@lock.synchronize { perform_operations }
+=begin
+		if ENV['LOCK'].eql?"true"
+			perform_operations
+		else
+			while ENV['LOCK'].eql?"false"
+				sleep 10
+				puts "Looper on"
+			end
+			perform_operations
+		end
+=end
 
     rescue StandardError => error
 	    print "Not a valid Quay post " + error.to_s
@@ -39,20 +65,29 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
   end
 
   # method to perform various CI operations
-  def perform_operations
-    # handle requests one at a time (to avoid concurrency) - Needs testing
-    while @lock
-      @lock = true
-      docker_update
-      sleep 10
+	def perform_operations
 
-      run_api_tests
-      run_ui_tests
-      generate_log
-      slack_post
-      @lock = false
-    end
-  end
+		#create lock file
+		File.new("file.lock", "w")
+		# handle requests one at a time (to avoid concurrency) - Needs testing
+#		if ENV['LOCK'].eql?"true" 
+#			ENV['LOCK'] = "false"
+
+			docker_update
+			sleep 10
+
+			run_api_tests
+			run_ui_tests
+			generate_log
+			slack_post
+
+#			ENV['LOCK'] = "true"
+#			puts "Done"
+#		else
+#			puts "Lock being used now #{ENV['LOCK']}"
+#		end
+			File.delete("file.lock")
+	end
 
   # update docker images locally
   def docker_update
@@ -93,8 +128,8 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
       'API logs' => @result_api,
       'SE logs' => @result_ui
     }
-    response.body = JSON.generate obj
-    response['Content-Type'] = 'application/json'
+    #response.body = JSON.generate obj
+    #response['Content-Type'] = 'application/json'
   end
 
   def slack_post
