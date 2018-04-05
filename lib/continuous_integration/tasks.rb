@@ -1,7 +1,5 @@
 # frozen_string_literal: true
-
 require_relative 'constants'
-require 'thread'
 
 # Class to perform operations on receiving http calls
 class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
@@ -13,6 +11,7 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
     @result_api = ''
     @result_ui = ''
     @git_branch = ''
+		@response = ''
   end
 
   # curl localhost:8080/docker
@@ -34,7 +33,7 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
 
 		#loop in case already processing a request
 		while true
-			if ENV['LOCK'].eql?"true"
+			if $LOCK
 				sleep 10
 				puts "Waiting"
 			else
@@ -44,9 +43,16 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
 		end
 
 		perform_operations
+
+    _response.body = JSON.generate @response
+    _response['Content-Type'] = 'application/json'
 		
     rescue StandardError => error
-	    print "Not a valid Quay post " + error.to_s
+			
+			#unset lock on exceptions
+			$LOCK = false
+
+			print "Not a valid Quay post " + error.to_s
     end
   end
 
@@ -54,7 +60,7 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
 	def perform_operations
 
 		#set lock
-		ENV['LOCK'] = "true"
+		$LOCK = true
 
 		docker_update
 		sleep 10
@@ -65,7 +71,7 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
 		slack_post
 
 		#unset lock
-		ENV['LOCK'] = "false"
+		$LOCK = false
 	end
 
   # update docker images locally
@@ -102,13 +108,11 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def generate_log
-    obj = {
+    @response = {
       'Docker logs' => @process_status,
       'API logs' => @result_api,
       'SE logs' => @result_ui
     }
-    #response.body = JSON.generate obj
-    #response['Content-Type'] = 'application/json'
   end
 
   def slack_post
