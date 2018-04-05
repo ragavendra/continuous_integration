@@ -58,9 +58,9 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
   def docker_update
     Dir.chdir(DOCKER_PATH) do
       # perform docker images update
-      `sudo docker compose kill`
-      `sudo docker compose rm`
-      `sudo docker compose up -d`
+      `sudo docker-compose kill`
+      `sudo docker-compose rm`
+      `sudo docker-compose up -d`
     end
   end
 
