@@ -13,7 +13,6 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
     @result_api = ''
     @result_ui = ''
     @git_branch = ''
-		#@lock = Mutex.new
   end
 
   # curl localhost:8080/docker
@@ -33,32 +32,19 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
     @git_branch = @git_branch.split('/')
     @git_branch = @git_branch.last
 
+		#loop in case already processing a request
 		while true
-			if File.exist?("file.lock")
+			if ENV['LOCK'].eql?"true"
 				sleep 10
 				puts "Waiting"
 			else
 				puts "File not there"
 				break
 			end
-
 		end
 
 		perform_operations
-
-		#@lock.synchronize { perform_operations }
-=begin
-		if ENV['LOCK'].eql?"true"
-			perform_operations
-		else
-			while ENV['LOCK'].eql?"false"
-				sleep 10
-				puts "Looper on"
-			end
-			perform_operations
-		end
-=end
-
+		
     rescue StandardError => error
 	    print "Not a valid Quay post " + error.to_s
     end
@@ -67,26 +53,19 @@ class DockerEndpoint < WEBrick::HTTPServlet::AbstractServlet
   # method to perform various CI operations
 	def perform_operations
 
-		#create lock file
-		File.new("file.lock", "w")
-		# handle requests one at a time (to avoid concurrency) - Needs testing
-#		if ENV['LOCK'].eql?"true" 
-#			ENV['LOCK'] = "false"
+		#set lock
+		ENV['LOCK'] = "true"
 
-			docker_update
-			sleep 10
+		docker_update
+		sleep 10
 
-			run_api_tests
-			run_ui_tests
-			generate_log
-			slack_post
+		run_api_tests
+		run_ui_tests
+		generate_log
+		slack_post
 
-#			ENV['LOCK'] = "true"
-#			puts "Done"
-#		else
-#			puts "Lock being used now #{ENV['LOCK']}"
-#		end
-			File.delete("file.lock")
+		#unset lock
+		ENV['LOCK'] = "false"
 	end
 
   # update docker images locally
