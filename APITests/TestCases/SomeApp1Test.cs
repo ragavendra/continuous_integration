@@ -6,13 +6,13 @@ namespace AppName
 {
     public class SomeApp1Test : TestFixture
     {
-        protected SomeApp1 someapp1 = new SomeApp1();
 
         //[Ignore("Requires lot of bandwidth")]
         [TestCase(TestName = "Get bus statuses - All"), Order(0)]
         public void GetSomeApp1All() 
         {
 
+			Someapp1 someapp1 = new Someapp1();
             someapp1.SomeApp1_();
             //var respo = someapp1.performGetOpn();
             var respo = someapp1.Get();
@@ -34,7 +34,8 @@ namespace AppName
         [TestCase(TestName = "Get bus statuses - Verify Route Filter"),TestCaseSource(typeof(Data), "RouteNo"), Order(2)]
         public void GetSomeApp1(string route) 
         {
-
+			
+			Someapp1 someapp1 = new Someapp1();
             someapp1.SomeApp1_(route);
             //var respo = someapp1.performGetOpn();
             var respo = someapp1.Get();
@@ -56,7 +57,9 @@ namespace AppName
         [TestCase(TestName = "Get bus statuses history - By date and time"), Order(4)]
         public void GetSomeApp1History() 
         {
-
+			
+			Someapp1 someapp1 = new Someapp1();
+			
             //yesterday
             string timestamp = Constants.now.AddDays(-1).AddHours(3).ToString("yyyy-MM-ddTHH:mm:ssZ");
             someapp1.SomeApp1History(timestamp);
@@ -79,6 +82,8 @@ namespace AppName
         public void GetSomeApp1TimeLapse() 
         {
 
+			Someapp1 someapp1 = new Someapp1();
+			
             //yesterday
             string fromTimestamp = Constants.now.AddDays(-1).AddHours(3).ToString("yyyy-MM-ddTHH:mm:ssZ");
             string toTimestamp = Constants.now.AddDays(-1).AddHours(5).ToString("yyyy-MM-ddTHH:mm:ssZ");
@@ -103,7 +108,8 @@ namespace AppName
         [TestCase(TestName = "Get status - By request id"), Order(6)]
         public void GetStatus() 
         {
-
+			Someapp1 someapp1 = new Someapp1();
+			
             //yesterday
             string fromTimestamp = Constants.now.AddDays(-1).AddHours(3).ToString("yyyy-MM-ddTHH:mm:ssZ");
             string toTimestamp = Constants.now.AddDays(-1).AddHours(5).ToString("yyyy-MM-ddTHH:mm:ssZ");

@@ -14,6 +14,63 @@ namespace AppName
         {
             URLi = $"{protocol}://{serverName}/someapp/api/someapp/Settings/All";
         }
+		
+		//search incident URL gen multiple params
+        public void GetIncidentReportSearch(string ss = "", string sk = "", string fd = "", string td = "", string ui = "")
+        {
+            int iIndex = 0;
+
+            //"ss=abc&sk=xyz&fd=123&td=235&ui=jjj"
+
+            if ((ss == "") && (sk == "") && (fd == "") && (td == "") && (ui == ""))
+            {
+                URLi = $"{protocol}://{serverName}/v{version}/IncidentReport/list";
+                return;
+            }
+
+            if (ss != "")
+            {
+                URLi = URLi + $"ss={ss}";
+                iIndex++;
+            }
+
+            if (sk != "")
+            {
+                if (iIndex > 0)
+                    URLi = URLi + "&";
+
+                URLi = URLi + $"sk={sk}";
+                iIndex++;
+            }
+
+            if (fd != "")
+            {
+                if (iIndex > 0)
+                    URLi = URLi + "&";
+
+                URLi = URLi + $"fd={fd}";
+            }
+
+            if (td != "")
+            {
+                if (iIndex > 0)
+                    URLi = URLi + "&";
+
+                URLi = URLi + $"td={td}";
+            }
+
+            if (ui != "")
+            {
+                if (iIndex > 0)
+                    URLi = URLi + "&";
+
+                URLi = URLi + $"ui={ui}";
+            }
+
+            URLi = $"{protocol}://{serverName}/v{version}/IncidentReport/list?" + URLi;
+
+        }
+
 
         public void GetCarsSettings()
         {
