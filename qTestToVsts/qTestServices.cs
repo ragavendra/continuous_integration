@@ -47,7 +47,7 @@ namespace PortalApp
             URLi = $"{protocol}://{serverName}/api/v{version}/projects/{projectId}/modules?expand=descendants";
         }
 
-        public void GetTestCases(string projectId, string parentId = "", string page = "", string size = "20", string expandProps = "false", string expandSteps = "false")
+        public void GetTestCases(string projectId, string parentId = "", string page = "", string size = "500", string expandProps = "false", string expandSteps = "false")
         {
             int iIndex = 0;
             URLi = "";

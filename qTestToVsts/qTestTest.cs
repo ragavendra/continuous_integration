@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
@@ -20,13 +21,13 @@ namespace PortalApp
         public int testPlanId = 0;
 
         [TestCase(TestName = "Delete test case VSTS"), Order(6)]
-        public void DeleteTestCaseVSTS(string vstsProjectId = "EIAM Updates")
+        public void DeleteTestCaseVSTS(string vstsProjectId = "Mitel LiveChat")
         {
 
             qTest qtest = new qTest();
             //qtest.GetTestCases(qtestProjectId);
 
-            for (int i = 19683; i <= 20713; i++)
+            for (int i = 19147; i <= 19216; i++)
             {
 
                 //get all modules for proj
@@ -37,7 +38,9 @@ namespace PortalApp
                 var respo = qtest.Delete();
                 //Assert.AreEqual(204, (int)respo.status, $"Status code is not 200");
 
-                TestContext.WriteLine(i + $" {(int)respo.status}");
+                //document if not success
+                if (!((int)respo.status).Equals(204))
+                    TestContext.WriteLine(i + $" {(int)respo.status}");
             }
         }
 
@@ -46,8 +49,8 @@ namespace PortalApp
 
         //[Ignore("Test for Q Test")]
         [TestCase(TestName = "Export test cases to VSTS from QTest with folder"), Order(2)]
-        public void ExportTestCasesToVSTSWithFolder(string qtestProjectId = "27533",
-            string vstsProjectId = "EIAM Updates")
+        public void ExportTestCasesToVSTSWithFolder(string qtestProjectId = "79582",
+            string vstsProjectId = "Web Team")
         {
 
             qTest qtest = new qTest();
@@ -113,6 +116,7 @@ namespace PortalApp
             //migrate each testCase
             foreach (var testCase in resp)
                 connTestCase(qtest, qtestProjectId, vstsProjectId, testCase.id, tags);
+                //TestContext.WriteLine(testCase.name);
 
         }
 
@@ -137,12 +141,13 @@ namespace PortalApp
                 List<FieldsAll> fields = new List<FieldsAll>();
 
                 fields.Add(new Field() {op = "add", from = null, path = "/fields/System.Tags", value = tags});
+                fields.Add(new Field() {op = "add", from = null, path = "/fields/System.AssignedTo", value = ""});
 
                 fields.Add(new Field()
                     {op = "add", from = null, path = "/fields/Custom.AutomationRequired", value = "No"});
 
-                if (resp1.description.Trim().Length > 0)
-                    str += formatString("Description", resp1.description);
+                //if (resp1.description.Trim().Length > 0)
+                  //  str += formatString("Description", resp1.description);
 
                 //loop on each property
                 foreach (var property in resp1.properties)
@@ -203,9 +208,11 @@ namespace PortalApp
                 }
 
                 if (attchFlag)
-                    title = "[qTest] " + resp1.name + " [A]";
+                    //title = "[qTest] " + resp1.name + " [A]";
+                    title = resp1.name + " [A]";
                 else
-                    title = "[qTest] " + resp1.name;
+                    //title = "[qTest] " + resp1.name;
+                    title = resp1.name;
 
                 fields.Add(new Field() {op = "add", from = null, path = "/fields/System.Title", value = title});
 
@@ -230,6 +237,8 @@ namespace PortalApp
 
                 var resp2 = JsonConvert.DeserializeObject<CrtWrkItemResp>(respo.response);
                 TestContext.WriteLine(resp2.id);
+
+                System.Threading.Thread.Sleep(300);
 
             /*
                 //add testcase to static test suite id
@@ -310,7 +319,8 @@ namespace PortalApp
             testSuite.name = tags;
             testSuite.suiteType = "DynamicTestSuite";
             testSuite.queryString =
-                $"select [System.Id], [System.WorkItemType], [System.Title], [Microsoft.VSTS.Common.Priority], [System.AssignedTo], [System.AreaPath] from WorkItems where [System.TeamProject] = @project and [System.WorkItemType] in group 'Microsoft.TestCaseCategory' and [System.Title] contains words 'qTest' and [System.Tags] contains '{tags}'";
+                $"select [System.Id], [System.WorkItemType], [System.Description], [Microsoft.VSTS.Common.Priority], [System.AssignedTo], [System.AreaPath] from WorkItems where [System.TeamProject] = @project and [System.WorkItemType] in group 'Microsoft.TestCaseCategory' and [System.Description] contains words 'qTest' and [System.Tags] contains '{tags}'";
+                //$"select [System.Id], [System.WorkItemType], [System.Title], [Microsoft.VSTS.Common.Priority], [System.AssignedTo], [System.AreaPath] from WorkItems where [System.TeamProject] = @project and [System.WorkItemType] in group 'Microsoft.TestCaseCategory' and [System.Title] contains words 'qTest' and [System.Tags] contains '{tags}'";
 
             qtest.CreateTestSuite(vstsProjectId, testSuite, testPlanId);
             qtest.SetAuthorization("Basic", "cmJhbmdhbG86YjR1Z3NuYTM1cjNqNW82dzUzbmQ1cnhrc2pyaWV1aXY2ZnFtdGtsdXhhMnRpemZ0bGFkcQ==");
