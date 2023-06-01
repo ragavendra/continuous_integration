@@ -34,7 +34,7 @@ namespace PortalApp
                 qtest.DeleteTestCase(vstsProjectId, i.ToString());
 
                 qtest.SetAuthorization("Basic",
-                    "cmJhbmdhbG86YjR1Z3NuYTM1cjNqNW82dzUzbmQ1cnhrc2pyaWV1aXY2ZnFtdGtsdXhhMnRpemZ0bGFkcQ==");
+                    "basicKey");
                 var respo = qtest.Delete();
                 //Assert.AreEqual(204, (int)respo.status, $"Status code is not 200");
 
@@ -49,8 +49,8 @@ namespace PortalApp
 
         //[Ignore("Test for Q Test")]
         [TestCase(TestName = "Export test cases to VSTS from QTest with folder"), Order(2)]
-        public void ExportTestCasesToVSTSWithFolder(string qtestProjectId = "79582",
-            string vstsProjectId = "Web Team")
+        public void ExportTestCasesToVSTSWithFolder(string qtestProjectId = "171717",
+            string vstsProjectId = "Proj Id")
         {
 
             qTest qtest = new qTest();
@@ -163,7 +163,7 @@ namespace PortalApp
                 fields.Add(new Field()
                 {
                     op = "add", from = null, path = "/fields/System.Description",
-                    value = resp1.description + " " + resp1.id + $" qTest link = https://translinkqa.qtestnet.com/p/{qtestProjectId}/portal/project#tab=testdesign&object=1&id={resp1.id}"
+                    value = resp1.description + " " + resp1.id + $" qTest link = https://company.qtestnet.com/p/{qtestProjectId}/portal/project#tab=testdesign&object=1&id={resp1.id}"
                 });
 
                 //attachment code
@@ -222,14 +222,14 @@ namespace PortalApp
                 //   fields.Add(new Field() { op = "add", from = null, path = "/relations/-", value = title });
                 //}
                 //str += $" qTest id = {resp1.id}";
-                str += $"<br>qTest link = <a href=\"https://translinkqa.qtestnet.com/p/{qtestProjectId}/portal/project#tab=testdesign&object=1&id={resp1.id}\">{resp1.id}</a>";
+                str += $"<br>qTest link = <a href=\"https://company.qtestnet.com/p/{qtestProjectId}/portal/project#tab=testdesign&object=1&id={resp1.id}\">{resp1.id}</a>";
 
                 //add comments of str var
                 fields.Add(new Field() {op = "add", from = null, path = "/fields/System.History", value = str});
 
                 qtest.CreateTestCase(vstsProjectId, fields);
                 qtest.SetAuthorization("Basic",
-                    "cmJhbmdhbG86YjR1Z3NuYTM1cjNqNW82dzUzbmQ1cnhrc2pyaWV1aXY2ZnFtdGtsdXhhMnRpemZ0bGFkcQ==");
+                    "basicKey");
                 //qtest.SetAcceptHeader("application/json-patch+json");
                 respo = qtest.Post();
 
@@ -298,7 +298,7 @@ namespace PortalApp
 
                 qtest.CreateTestPlan(vstsProjectId, testPlan_);
                 qtest.SetAuthorization("Basic",
-                    "cmJhbmdhbG86YjR1Z3NuYTM1cjNqNW82dzUzbmQ1cnhrc2pyaWV1aXY2ZnFtdGtsdXhhMnRpemZ0bGFkcQ==");
+                    "someKey");
                 //qtest.SetAcceptHeader("application/json-patch+json");
                 var respo_1 = qtest.Post();
 
@@ -342,7 +342,7 @@ namespace PortalApp
                 $"select [System.Id], [System.WorkItemType], [System.Title], [Microsoft.VSTS.Common.Priority], [System.AssignedTo], [System.AreaPath] from WorkItems where [System.TeamProject] = @project and [System.WorkItemType] in group 'Microsoft.TestCaseCategory' and [System.Title] contains words 'qTest' and [System.Tags] contains '{tags}'";
 
             qtest.CreateTestSuite(vstsProjectId, testSuite, testPlanId);
-            qtest.SetAuthorization("Basic", "cmJhbmdhbG86YjR1Z3NuYTM1cjNqNW82dzUzbmQ1cnhrc2pyaWV1aXY2ZnFtdGtsdXhhMnRpemZ0bGFkcQ==");
+            qtest.SetAuthorization("Basic", "basicKey");
             //qtest.SetAcceptHeader("application/json-patch+json");
             var respo_ = qtest.Post();
 
@@ -373,8 +373,8 @@ namespace PortalApp
         public UploadResp uploadStream(Stream stream, qTest qtest, string fileName)
         {
             //qTest qtest = new qTest();
-            qtest.UploadStream("Mitel LiveChat", stream, fileName);
-            qtest.SetAuthorization("Basic", "cmJhbmdhbG86YjR1Z3NuYTM1cjNqNW82dzUzbmQ1cnhrc2pyaWV1aXY2ZnFtdGtsdXhhMnRpemZ0bGFkcQ==");
+            qtest.UploadStream("Some text", stream, fileName);
+            qtest.SetAuthorization("Basic", "basicKey");
             var respo = qtest.Post();
 
             Assert.AreEqual(201, (int)respo.status, $"Status code is not 200");
@@ -397,8 +397,8 @@ namespace PortalApp
         public string uploadAttachment(string areaPath, string fileName, qTest qtest)
         {
             //qTest qtest = new qTest();
-            qtest.UploadAttachment("Mitel LiveChat", $@"C:\Users\rbangalo\Desktop\{fileName}");
-            qtest.SetAuthorization("Basic", "cmJhbmdhbG86YjR1Z3NuYTM1cjNqNW82dzUzbmQ1cnhrc2pyaWV1aXY2ZnFtdGtsdXhhMnRpemZ0bGFkcQ==");
+            qtest.UploadAttachment("Some text", $@"C:\Users\user\Desktop\{fileName}");
+            qtest.SetAuthorization("Basic", "basicKey");
             var respo = qtest.Post();
 
             Assert.AreEqual(201, (int)respo.status, $"Status code is not 200");
@@ -426,7 +426,7 @@ namespace PortalApp
         public void ReleaseGates(int status, string code, string batchId, string modelType, 
                 string approvalStage, string cid)
         {
-            code = "kKRpjRirIWhwmGIkl4q45SsBPaaxm3oFwdvk14bD3mdoBQhUlaQu4Q==";
+            code = "someKey";
 
             NextBus nextBus = new NextBus();
             //nextBus.SetCustomHeader(Constants.apiKeyParam, Constants.apiKeyValue);
